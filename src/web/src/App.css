@@ -17,6 +17,18 @@
   min-width: 200px;
 }
 
+.location {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.location-badge { font-size: 0.85rem; color: #666; }
+.location-error { font-size: 0.85rem; color: #c00; }
+
 .results {
   list-style: none;
   padding: 0;

@@ -12,13 +12,29 @@ function App() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
+
+  function handleUseLocation() {
+    setLocationError(null)
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported')
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setLocationError('Location denied or unavailable')
+    )
+  }
 
   async function handleSearch() {
     if (!query.trim()) return
     setLoading(true)
     setResults(null)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
+      let url = `/api/search?q=${encodeURIComponent(query.trim())}`
+      if (location) url += `&lat=${location.lat}&lng=${location.lng}`
+      const res = await fetch(url)
       const data = await res.json()
       setResults(Array.isArray(data) ? data : [])
     } catch {
@@ -43,6 +59,13 @@ function App() {
         <button type="button" onClick={handleSearch} disabled={loading}>
           {loading ? 'Searching...' : 'Search'}
         </button>
+      </div>
+      <div className="location">
+        <button type="button" onClick={handleUseLocation}>
+          Use my location
+        </button>
+        {location && <span className="location-badge">Using location</span>}
+        {locationError && <span className="location-error">{locationError}</span>}
       </div>
       {results && (
         <ul className="results">
