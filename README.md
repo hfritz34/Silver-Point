@@ -10,7 +10,3 @@ Local and online price comparison: find the lowest price for a product or servic
 **API:** From repo root, `cd src/api && dotnet run`. Health: `GET https://localhost:7xxx/health`. Demo search: `GET https://localhost:7xxx/api/search?q=milk`.
 
 **Web:** `cd src/web && npm install && npm run dev`. Open the URL shown (e.g. http://localhost:5173).
-
-## Commit rules
-
-One-line commit messages, no AI attribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
