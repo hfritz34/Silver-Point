@@ -1,0 +1,16 @@
+# Local only (not committed)
+scripts/commit-msg
+CONTRIBUTING.md
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.http
+appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
