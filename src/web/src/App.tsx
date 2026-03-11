@@ -47,6 +47,7 @@ function App() {
   const [dealPosting, setDealPosting] = useState(false)
   const [dealSuccess, setDealSuccess] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [showLocationHelp, setShowLocationHelp] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -86,7 +87,8 @@ function App() {
         setLocating(false)
       },
       () => {
-        setLocationError('Location permission denied — enable it in browser settings')
+        setLocationError('Location permission denied.')
+        setShowLocationHelp(true)
         setLocating(false)
       },
       { timeout: 10000 }
@@ -279,6 +281,44 @@ function App() {
       )}
 
       {sorted && sorted.length === 0 && <p className="no-results">No results found.</p>}
+
+      {showLocationHelp && (
+        <div className="modal-overlay" onClick={() => setShowLocationHelp(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Enable Location Access</h2>
+            <p className="modal-sub">Your browser blocked location. Here's how to fix it:</p>
+            <div className="location-help">
+              <div className="help-block">
+                <strong>Chrome</strong>
+                <ol>
+                  <li>Click the 🔒 lock icon in the address bar</li>
+                  <li>Find <em>Location</em> → set to <em>Allow</em></li>
+                  <li>Reload the page</li>
+                </ol>
+              </div>
+              <div className="help-block">
+                <strong>Safari</strong>
+                <ol>
+                  <li>Go to <em>Settings → Privacy → Location Services</em></li>
+                  <li>Find Safari → set to <em>While Using</em></li>
+                  <li>Reload the page</li>
+                </ol>
+              </div>
+              <div className="help-block">
+                <strong>Firefox</strong>
+                <ol>
+                  <li>Click the 🔒 lock icon → <em>Connection Secure</em></li>
+                  <li>Find <em>Location</em> → set to <em>Allow</em></li>
+                  <li>Reload the page</li>
+                </ol>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowLocationHelp(false)}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDealModal && (
         <div className="modal-overlay" onClick={() => setShowDealModal(false)}>
