@@ -9,6 +9,7 @@ type SearchResult = {
   price: number
   distanceMi: number
   stock: Stock
+  community: boolean
 }
 
 const POPULAR = ['milk', 'infant formula', 'eggs', 'ibuprofen', 'diapers']
@@ -19,13 +20,32 @@ const STOCK_LABEL: Record<Stock, string> = {
   out_of_stock: 'Out of Stock',
 }
 
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+    const d = await res.json()
+    const addr = d.address
+    return addr.city || addr.town || addr.village || addr.county || 'your area'
+  } catch {
+    return 'your area'
+  }
+}
+
 function App() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationLabel, setLocationLabel] = useState<string | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'price' | 'distance'>('price')
+  const [showDealModal, setShowDealModal] = useState(false)
+  const [dealForm, setDealForm] = useState({ productName: '', storeName: '', price: '' })
+  const [dealPosting, setDealPosting] = useState(false)
+  const [dealSuccess, setDealSuccess] = useState(false)
 
   const sorted = useMemo(() => {
     if (!results) return null
@@ -40,10 +60,12 @@ function App() {
       setLocationError('Geolocation not supported')
       return
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setLocationError('Location denied or unavailable')
-    )
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+      setLocation(coords)
+      const label = await reverseGeocode(coords.lat, coords.lng)
+      setLocationLabel(label)
+    }, () => setLocationError('Location denied or unavailable'))
   }
 
   async function search(q: string) {
@@ -68,6 +90,29 @@ function App() {
   function handleChip(chip: string) {
     setQuery(chip)
     search(chip)
+  }
+
+  async function handlePostDeal(e: React.FormEvent) {
+    e.preventDefault()
+    const price = parseFloat(dealForm.price)
+    if (!dealForm.productName || !dealForm.storeName || isNaN(price) || price <= 0) return
+    setDealPosting(true)
+    try {
+      await fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: dealForm.productName, storeName: dealForm.storeName, price }),
+      })
+      setDealSuccess(true)
+      setTimeout(() => {
+        setShowDealModal(false)
+        setDealSuccess(false)
+        setDealForm({ productName: '', storeName: '', price: '' })
+        search(dealForm.productName)
+      }, 1200)
+    } finally {
+      setDealPosting(false)
+    }
   }
 
   const maxPrice = sorted ? Math.max(...sorted.map((r) => r.price)) : 0
@@ -96,7 +141,9 @@ function App() {
         <button type="button" className="location-btn" onClick={handleUseLocation}>
           📍 Use my location
         </button>
-        {location && <span className="location-badge">Location active</span>}
+        {locationLabel && (
+          <span className="location-badge">Near {locationLabel}</span>
+        )}
         {locationError && <span className="location-error">{locationError}</span>}
       </div>
 
@@ -106,6 +153,9 @@ function App() {
             {p}
           </button>
         ))}
+        <button type="button" className="chip chip-deal" onClick={() => setShowDealModal(true)}>
+          + Post a Deal
+        </button>
       </div>
 
       {sorted && sorted.length > 0 && (
@@ -133,10 +183,11 @@ function App() {
               const savings = maxPrice - r.price
               const isBest = i === 0 && sortBy === 'price'
               return (
-                <div key={i} className={`result-card${isBest ? ' best' : ''}`}>
+                <div key={i} className={`result-card${isBest ? ' best' : ''}${r.community ? ' community' : ''}`}>
                   <div className="card-top">
                     <div className="card-left">
                       {isBest && <span className="best-badge">Best Price</span>}
+                      {r.community && <span className="community-badge">Community Deal</span>}
                       <span className="store-name">{r.storeName}</span>
                     </div>
                     <span className="distance">{r.distanceMi} mi</span>
@@ -156,6 +207,55 @@ function App() {
       )}
 
       {sorted && sorted.length === 0 && <p className="no-results">No results found.</p>}
+
+      {showDealModal && (
+        <div className="modal-overlay" onClick={() => setShowDealModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Post a Deal</h2>
+            <p className="modal-sub">Spotted a great price? Share it with your community.</p>
+            {dealSuccess ? (
+              <p className="deal-success">Deal posted! Thanks for contributing.</p>
+            ) : (
+              <form onSubmit={handlePostDeal}>
+                <label>Product</label>
+                <input
+                  type="text"
+                  placeholder="e.g. milk, diapers..."
+                  value={dealForm.productName}
+                  onChange={(e) => setDealForm((f) => ({ ...f, productName: e.target.value }))}
+                  required
+                />
+                <label>Store</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Walmart, Aldi..."
+                  value={dealForm.storeName}
+                  onChange={(e) => setDealForm((f) => ({ ...f, storeName: e.target.value }))}
+                  required
+                />
+                <label>Price ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="e.g. 1.99"
+                  value={dealForm.price}
+                  onChange={(e) => setDealForm((f) => ({ ...f, price: e.target.value }))}
+                  required
+                />
+                <div className="modal-actions">
+                  <button type="button" className="btn-ghost" onClick={() => setShowDealModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={dealPosting}>
+                    {dealPosting ? 'Posting…' : 'Post Deal'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
