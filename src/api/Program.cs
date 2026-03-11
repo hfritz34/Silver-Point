@@ -1,5 +1,7 @@
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<SilverPoint.Api.KrogerService>();
 
 var app = builder.Build();
 app.UseHttpsRedirection();
@@ -111,9 +113,42 @@ object[] GetResults(string query, double? lat, double? lng)
     return [.. baseResults, .. community];
 }
 
-// Search endpoint
-app.MapGet("/api/search", (string? q, double? lat, double? lng) =>
-    Results.Ok(GetResults(q?.Trim() ?? "", lat, lng)));
+// Search endpoint — tries Kroger live data first, falls back to mock
+app.MapGet("/api/search", async (string? q, double? lat, double? lng,
+    SilverPoint.Api.KrogerService kroger) =>
+{
+    var query = q?.Trim() ?? "";
+
+    // Attempt live Kroger data when lat/lng are provided and credentials are configured
+    if (lat is not null && lng is not null)
+    {
+        var locs = await kroger.GetNearbyLocationsAsync(lat.Value, lng.Value);
+        if (locs.Count > 0)
+        {
+            var krogerResults = new List<object>();
+            foreach (var loc in locs)
+            {
+                var products = await kroger.SearchProductsAsync(query, loc.LocationId);
+                if (products is null) break; // unconfigured — skip to mock
+                var best = products.MinBy(p => p.Price);
+                if (best is not null)
+                    krogerResults.Add(new
+                    {
+                        productName = best.Description,
+                        storeName = loc.Name,
+                        price = best.Price,
+                        distanceMi = Math.Round(loc.DistMi, 1),
+                        stock = best.Stock,
+                        community = false,
+                    });
+            }
+            if (krogerResults.Count > 0)
+                return Results.Ok(krogerResults.OrderBy(x => ((dynamic)x).price).ToList());
+        }
+    }
+
+    return Results.Ok(GetResults(query, lat, lng));
+});
 
 // Post a community deal
 app.MapPost("/api/deals", (DealRequest req) =>
