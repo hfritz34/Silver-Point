@@ -46,6 +46,7 @@ function App() {
   const [dealForm, setDealForm] = useState({ productName: '', storeName: '', price: '' })
   const [dealPosting, setDealPosting] = useState(false)
   const [dealSuccess, setDealSuccess] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -63,17 +64,33 @@ function App() {
   }, [results, sortBy])
 
   function handleUseLocation() {
+    if (location) {
+      // Toggle off
+      setLocation(null)
+      setLocationLabel(null)
+      setLocationError(null)
+      return
+    }
     setLocationError(null)
     if (!navigator.geolocation) {
       setLocationError('Geolocation not supported')
       return
     }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-      setLocation(coords)
-      const label = await reverseGeocode(coords.lat, coords.lng)
-      setLocationLabel(label)
-    }, () => setLocationError('Location denied or unavailable'))
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setLocation(coords)
+        const label = await reverseGeocode(coords.lat, coords.lng)
+        setLocationLabel(label)
+        setLocating(false)
+      },
+      () => {
+        setLocationError('Location permission denied — enable it in browser settings')
+        setLocating(false)
+      },
+      { timeout: 10000 }
+    )
   }
 
   async function search(q: string) {
@@ -185,13 +202,21 @@ function App() {
         <div className="location">
           <button
             type="button"
-            className={`location-btn${location ? ' active' : ''}`}
+            className={`location-btn${location ? ' active' : ''}${locating ? ' locating' : ''}`}
             onClick={handleUseLocation}
+            disabled={locating}
           >
-            📍 {location ? `Near ${locationLabel ?? '…'}` : 'Use my location'}
+            {locating ? '⏳ Getting location…' : location ? '📍 Location on · tap to remove' : '📍 Use my location'}
           </button>
           {locationError && <span className="location-error">{locationError}</span>}
         </div>
+
+        {location && locationLabel && (
+          <div className="location-strip">
+            <span className="location-strip-icon">📍</span>
+            <span>Showing prices near <strong>{locationLabel}</strong></span>
+          </div>
+        )}
       </div>
 
       <div className="chips">

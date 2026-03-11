@@ -151,7 +151,23 @@ h1 {
   color: var(--green);
   background: rgba(76, 175, 80, 0.1);
 }
+.location-btn.locating { opacity: 0.6; cursor: not-allowed; }
 .location-error { font-size: 0.8rem; color: var(--red); }
+
+/* Location strip shown after permission granted */
+.location-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--green);
+}
+.location-strip strong { color: var(--text); }
 
 /* Popular chips */
 .chips {
