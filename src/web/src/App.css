@@ -52,14 +52,22 @@ h1 {
 .tagline { margin: 0; color: var(--text-muted); font-size: 1rem; }
 
 /* Search bar */
+.search-wrap { margin-bottom: 1rem; }
+
 .search {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
-.search input {
+
+.input-wrap {
   flex: 1;
-  padding: 0.65rem 0.9rem;
+  position: relative;
+}
+
+.input-wrap input {
+  width: 100%;
+  padding: 0.65rem 2.2rem 0.65rem 0.9rem;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -67,8 +75,45 @@ h1 {
   font-size: 1rem;
   outline: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
-.search input:focus { border-color: var(--accent); }
+.input-wrap input:focus { border-color: var(--accent); }
+
+/* Location dot inside input */
+.input-loc-dot {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* Autocomplete dropdown */
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem 0;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.suggestions li {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.suggestions li:hover { background: rgba(255,255,255,0.06); }
+
 .search button {
   padding: 0.65rem 1.2rem;
   border-radius: 8px;
@@ -79,6 +124,7 @@ h1 {
   font-size: 0.95rem;
   cursor: pointer;
   transition: opacity 0.15s;
+  white-space: nowrap;
 }
 .search button:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -87,7 +133,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 .location-btn {
@@ -98,15 +143,13 @@ h1 {
   color: var(--text-muted);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 .location-btn:hover { border-color: var(--accent); color: var(--text); }
-.location-badge {
-  font-size: 0.8rem;
+.location-btn.active {
+  border-color: var(--green);
   color: var(--green);
-  background: rgba(76, 175, 80, 0.12);
-  padding: 0.2rem 0.6rem;
-  border-radius: 99px;
+  background: rgba(76, 175, 80, 0.1);
 }
 .location-error { font-size: 0.8rem; color: var(--red); }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import './App.css'
 
 type Stock = 'in_stock' | 'low_stock' | 'out_of_stock'
@@ -46,6 +46,14 @@ function App() {
   const [dealForm, setDealForm] = useState({ productName: '', storeName: '', price: '' })
   const [dealPosting, setDealPosting] = useState(false)
   const [dealSuccess, setDealSuccess] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return POPULAR
+    return POPULAR.filter((p) => p.includes(q) && p !== q)
+  }, [query])
 
   const sorted = useMemo(() => {
     if (!results) return null
@@ -71,6 +79,7 @@ function App() {
   async function search(q: string) {
     const trimmed = q.trim()
     if (!trimmed) return
+    setShowSuggestions(false)
     setLoading(true)
     setResults(null)
     setSortBy('price')
@@ -90,6 +99,22 @@ function App() {
   function handleChip(chip: string) {
     setQuery(chip)
     search(chip)
+  }
+
+  function handleInputChange(val: string) {
+    setQuery(val)
+    setShowSuggestions(true)
+  }
+
+  function handleInputBlur() {
+    // Delay so suggestion clicks register before hiding
+    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 150)
+  }
+
+  function handleSuggestionClick(s: string) {
+    if (blurTimeout.current) clearTimeout(blurTimeout.current)
+    setQuery(s)
+    search(s)
   }
 
   async function handlePostDeal(e: React.FormEvent) {
@@ -124,27 +149,49 @@ function App() {
         <p className="tagline">Find the lowest price near you.</p>
       </header>
 
-      <div className="search">
-        <input
-          type="text"
-          placeholder="Search for a product..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && search(query)}
-        />
-        <button type="button" onClick={() => search(query)} disabled={loading}>
-          {loading ? 'Searching…' : 'Search'}
-        </button>
-      </div>
+      <div className="search-wrap">
+        <div className="search">
+          <div className="input-wrap">
+            <input
+              type="text"
+              placeholder="Search for a product..."
+              value={query}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={handleInputBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') search(query)
+                if (e.key === 'Escape') setShowSuggestions(false)
+              }}
+            />
+            {location && (
+              <span className="input-loc-dot" title={`Near ${locationLabel}`}>📍</span>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="suggestions">
+                {suggestions.map((s) => (
+                  <li key={s} onMouseDown={() => handleSuggestionClick(s)}>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button type="button" onClick={() => search(query)} disabled={loading}>
+            {loading ? 'Searching…' : 'Search'}
+          </button>
+        </div>
 
-      <div className="location">
-        <button type="button" className="location-btn" onClick={handleUseLocation}>
-          📍 Use my location
-        </button>
-        {locationLabel && (
-          <span className="location-badge">Near {locationLabel}</span>
-        )}
-        {locationError && <span className="location-error">{locationError}</span>}
+        <div className="location">
+          <button
+            type="button"
+            className={`location-btn${location ? ' active' : ''}`}
+            onClick={handleUseLocation}
+          >
+            📍 {location ? `Near ${locationLabel ?? '…'}` : 'Use my location'}
+          </button>
+          {locationError && <span className="location-error">{locationError}</span>}
+        </div>
       </div>
 
       <div className="chips">
