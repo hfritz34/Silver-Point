@@ -8,68 +8,122 @@ app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())
 // Health for load balancers and CI
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
-// Mock datasets keyed by product keyword; results sorted by price asc
-var mockData = new Dictionary<string, object[]>
+// Representative store coords (Chicago-area defaults; shift with real user lat/lng)
+var storeCoords = new (string Name, double Lat, double Lng)[]
 {
-    ["milk"] =
-    [
-        new { productName = "milk", storeName = "Walmart",   price = 2.49m, distanceMi = 0.8,  stock = "in_stock"    },
-        new { productName = "milk", storeName = "Kroger",    price = 2.79m, distanceMi = 1.1,  stock = "in_stock"    },
-        new { productName = "milk", storeName = "Target",    price = 3.19m, distanceMi = 1.5,  stock = "in_stock"    },
-        new { productName = "milk", storeName = "CVS",       price = 3.49m, distanceMi = 0.6,  stock = "low_stock"   },
-        new { productName = "milk", storeName = "Walgreens", price = 3.89m, distanceMi = 0.4,  stock = "in_stock"    },
-    ],
-    ["formula"] =
-    [
-        new { productName = "infant formula", storeName = "Walmart",   price = 18.99m, distanceMi = 0.8, stock = "low_stock"    },
-        new { productName = "infant formula", storeName = "Target",    price = 22.49m, distanceMi = 1.5, stock = "in_stock"     },
-        new { productName = "infant formula", storeName = "Kroger",    price = 24.99m, distanceMi = 1.1, stock = "out_of_stock" },
-        new { productName = "infant formula", storeName = "CVS",       price = 26.99m, distanceMi = 0.4, stock = "in_stock"     },
-        new { productName = "infant formula", storeName = "Walgreens", price = 27.49m, distanceMi = 0.6, stock = "in_stock"     },
-    ],
-    ["eggs"] =
-    [
-        new { productName = "eggs", storeName = "Walmart",    price = 3.49m, distanceMi = 0.8, stock = "in_stock"  },
-        new { productName = "eggs", storeName = "Kroger",     price = 3.99m, distanceMi = 1.1, stock = "in_stock"  },
-        new { productName = "eggs", storeName = "Costco",     price = 4.99m, distanceMi = 3.2, stock = "in_stock"  },
-        new { productName = "eggs", storeName = "Target",     price = 5.49m, distanceMi = 1.5, stock = "low_stock" },
-        new { productName = "eggs", storeName = "Whole Foods",price = 6.99m, distanceMi = 2.1, stock = "in_stock"  },
-    ],
-    ["ibuprofen"] =
-    [
-        new { productName = "ibuprofen", storeName = "Walmart",   price = 4.99m,  distanceMi = 0.8, stock = "in_stock" },
-        new { productName = "ibuprofen", storeName = "Kroger",    price = 6.49m,  distanceMi = 1.1, stock = "in_stock" },
-        new { productName = "ibuprofen", storeName = "Target",    price = 7.99m,  distanceMi = 1.5, stock = "in_stock" },
-        new { productName = "ibuprofen", storeName = "CVS",       price = 9.99m,  distanceMi = 0.4, stock = "in_stock" },
-        new { productName = "ibuprofen", storeName = "Walgreens", price = 12.99m, distanceMi = 0.6, stock = "in_stock" },
-    ],
-    ["diapers"] =
-    [
-        new { productName = "diapers", storeName = "Walmart", price = 22.99m, distanceMi = 0.8, stock = "in_stock"  },
-        new { productName = "diapers", storeName = "Costco",  price = 24.99m, distanceMi = 3.2, stock = "in_stock"  },
-        new { productName = "diapers", storeName = "Target",  price = 26.99m, distanceMi = 1.5, stock = "in_stock"  },
-        new { productName = "diapers", storeName = "Kroger",  price = 29.49m, distanceMi = 1.1, stock = "low_stock" },
-        new { productName = "diapers", storeName = "CVS",     price = 34.99m, distanceMi = 0.4, stock = "in_stock"  },
-    ],
+    ("Walmart",     41.8500, -87.6800),
+    ("Kroger",      41.8600, -87.6600),
+    ("Target",      41.8700, -87.6500),
+    ("CVS",         41.8450, -87.6700),
+    ("Walgreens",   41.8550, -87.6900),
+    ("Costco",      41.8800, -87.7200),
+    ("Whole Foods", 41.8650, -87.6400),
 };
 
-object[] GetResults(string query)
+var defaultDist = new Dictionary<string, double>
 {
-    var q = query.ToLower();
-    if (q.Contains("formula") || q.Contains("infant")) return mockData["formula"];
-    foreach (var key in mockData.Keys)
-        if (q.Contains(key)) return mockData[key];
-    // Fallback
-    return
-    [
-        new { productName = query, storeName = "Walmart", price = 5.99m, distanceMi = 0.8, stock = "in_stock" },
-        new { productName = query, storeName = "Target",  price = 7.49m, distanceMi = 1.5, stock = "in_stock" },
-        new { productName = query, storeName = "CVS",     price = 8.99m, distanceMi = 0.4, stock = "in_stock" },
-    ];
+    ["Walmart"] = 0.8, ["Kroger"] = 1.1, ["Target"] = 1.5,
+    ["CVS"] = 0.6, ["Walgreens"] = 0.4, ["Costco"] = 3.2, ["Whole Foods"] = 2.1,
+};
+
+// Haversine distance in miles
+double Miles(double lat1, double lng1, double lat2, double lng2)
+{
+    const double R = 3958.8;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+           + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+           * Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+    return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 }
 
-// Demo search: keyword-matched mock results (lat/lng reserved for future geo)
+double Dist(string store, double? lat, double? lng)
+{
+    if (lat is null || lng is null) return defaultDist.GetValueOrDefault(store, 1.0);
+    var coord = storeCoords.FirstOrDefault(s => s.Name == store);
+    return coord == default ? 1.0 : Math.Round(Miles(lat.Value, lng.Value, coord.Lat, coord.Lng), 1);
+}
+
+// In-memory community deals (reset on restart — fine for demo)
+var userDeals = new System.Collections.Concurrent.ConcurrentBag<(string product, string store, decimal price)>();
+
+object[] GetResults(string query, double? lat, double? lng)
+{
+    var q = query.ToLower();
+
+    object[] WithDist(string product, (string store, decimal price, string stock)[] items) =>
+        [.. items
+            .Select(x => (object)new
+            {
+                productName = product, storeName = x.store, price = x.price,
+                distanceMi = Dist(x.store, lat, lng), stock = x.stock, community = false,
+            })
+            .OrderBy(x => ((dynamic)x).price)];
+
+    var baseResults = q switch
+    {
+        _ when q.Contains("formula") || q.Contains("infant") => WithDist("infant formula",
+        [
+            ("Walmart", 18.99m, "low_stock"), ("Target", 22.49m, "in_stock"),
+            ("Kroger", 24.99m, "out_of_stock"), ("CVS", 26.99m, "in_stock"),
+            ("Walgreens", 27.49m, "in_stock"),
+        ]),
+        _ when q.Contains("milk") => WithDist("milk",
+        [
+            ("Walmart", 2.49m, "in_stock"), ("Kroger", 2.79m, "in_stock"),
+            ("Target", 3.19m, "in_stock"), ("CVS", 3.49m, "low_stock"),
+            ("Walgreens", 3.89m, "in_stock"),
+        ]),
+        _ when q.Contains("egg") => WithDist("eggs",
+        [
+            ("Walmart", 3.49m, "in_stock"), ("Kroger", 3.99m, "in_stock"),
+            ("Costco", 4.99m, "in_stock"), ("Target", 5.49m, "low_stock"),
+            ("Whole Foods", 6.99m, "in_stock"),
+        ]),
+        _ when q.Contains("ibuprofen") || q.Contains("advil") => WithDist("ibuprofen",
+        [
+            ("Walmart", 4.99m, "in_stock"), ("Kroger", 6.49m, "in_stock"),
+            ("Target", 7.99m, "in_stock"), ("CVS", 9.99m, "in_stock"),
+            ("Walgreens", 12.99m, "in_stock"),
+        ]),
+        _ when q.Contains("diaper") => WithDist("diapers",
+        [
+            ("Walmart", 22.99m, "in_stock"), ("Costco", 24.99m, "in_stock"),
+            ("Target", 26.99m, "in_stock"), ("Kroger", 29.49m, "low_stock"),
+            ("CVS", 34.99m, "in_stock"),
+        ]),
+        _ => WithDist(query,
+        [
+            ("Walmart", 5.99m, "in_stock"), ("Target", 7.49m, "in_stock"),
+            ("CVS", 8.99m, "in_stock"),
+        ]),
+    };
+
+    var community = userDeals
+        .Where(d => d.product.ToLower().Contains(q) || q.Contains(d.product.ToLower()))
+        .Select(d => (object)new
+        {
+            productName = d.product, storeName = d.store, price = d.price,
+            distanceMi = Dist(d.store, lat, lng), stock = "in_stock", community = true,
+        });
+
+    return [.. baseResults, .. community];
+}
+
+// Search endpoint
 app.MapGet("/api/search", (string? q, double? lat, double? lng) =>
-    Results.Ok(GetResults(q?.Trim() ?? "")));
+    Results.Ok(GetResults(q?.Trim() ?? "", lat, lng)));
+
+// Post a community deal
+app.MapPost("/api/deals", (DealRequest req) =>
+{
+    if (string.IsNullOrWhiteSpace(req.ProductName) || string.IsNullOrWhiteSpace(req.StoreName) || req.Price <= 0)
+        return Results.BadRequest(new { error = "productName, storeName, and price > 0 required" });
+    userDeals.Add((req.ProductName.Trim(), req.StoreName.Trim(), req.Price));
+    return Results.Ok(new { ok = true });
+});
 
 app.Run();
+
+record DealRequest(string ProductName, string StoreName, decimal Price);
