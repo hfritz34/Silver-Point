@@ -1,19 +1,41 @@
 import { useState } from 'react'
+import {
+  BadgeDollarSign,
+  ListChecks,
+  Loader2,
+  MapPin,
+  Plus,
+  ReceiptText,
+  Search as SearchIcon,
+  Store,
+} from 'lucide-react'
 import './App.css'
 import Search from './components/Search'
 import ScanReceipt from './components/ScanReceipt'
 import ShoppingList from './components/ShoppingList'
 import VendorPortal from './components/VendorPortal'
 import PostDealModal from './components/PostDealModal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Toaster } from '@/components/ui/sonner'
 
 type Tab = 'search' | 'scan' | 'list' | 'vendor'
 
-const TAB_LABELS: Record<Tab, string> = {
-  search: 'Search',
-  scan: 'Scan & Save',
-  list: 'My List',
-  vendor: 'Vendors',
-}
+const TABS = [
+  { value: 'search', label: 'Search', icon: SearchIcon },
+  { value: 'scan', label: 'Scan', icon: ReceiptText },
+  { value: 'list', label: 'List', icon: ListChecks },
+  { value: 'vendor', label: 'Vendors', icon: Store },
+] satisfies { value: Tab; label: string; icon: typeof SearchIcon }[]
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
@@ -78,109 +100,135 @@ function App() {
   }
 
   return (
-    <main>
-      <header>
-        <div className="header-top">
-          <div>
-            <h1>SilverPoint</h1>
-            <p className="tagline">Find the lowest price near you.</p>
-          </div>
-          {points > 0 && (
-            <div className="points-badge">
-              <span className="points-value">{points}</span>
-              <span className="points-label">pts</span>
+    <main className="min-h-screen pb-8">
+      <header className="rounded-xl border border-border bg-card/95 p-4 text-card-foreground shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <Badge variant="secondary" className="w-fit gap-1.5">
+              <BadgeDollarSign className="size-3.5" />
+              Local price intelligence
+            </Badge>
+            <div>
+              <h1 className="text-3xl font-bold tracking-normal text-card-foreground">
+                SilverPoint
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Find the lowest verified price near you.
+              </p>
             </div>
+          </div>
+
+          {points > 0 && (
+            <Badge variant="outline" className="w-fit border-emerald-500/30 px-3 py-1 text-emerald-600">
+              {points} pts
+            </Badge>
           )}
         </div>
 
-        <div className="location-bar">
-          <button
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button
             type="button"
-            className={`location-btn${location ? ' active' : ''}${locating ? ' locating' : ''}`}
+            variant={location ? 'secondary' : 'outline'}
+            size="sm"
             onClick={handleUseLocation}
             disabled={locating}
           >
+            {locating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <MapPin className="size-4" />
+            )}
             {locating
               ? 'Getting location...'
               : location
                 ? `Near ${locationLabel || '...'}`
                 : 'Use my location'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="chip chip-deal"
+            variant="outline"
+            size="sm"
             onClick={() => setShowDealModal(true)}
           >
-            + Post a Deal
-          </button>
-          {locationError && <span className="location-error">{locationError}</span>}
+            <Plus className="size-4" />
+            Post Deal
+          </Button>
+          {locationError && (
+            <span className="text-sm text-destructive">{locationError}</span>
+          )}
         </div>
       </header>
 
-      <nav className="tab-nav">
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={`tab-btn${tab === t ? ' active' : ''}`}
-            onClick={() => setTab(t)}
-          >
-            {TAB_LABELS[t]}
-            {t === 'list' && listItems.length > 0 && (
-              <span className="tab-badge">{listItems.length}</span>
-            )}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-5 space-y-5">
+        <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-muted p-1">
+          {TABS.map(({ value, label, icon: Icon }) => (
+            <TabsTrigger key={value} value={value} className="gap-1.5 px-2 py-2 text-xs sm:text-sm">
+              <Icon className="size-4" />
+              <span>{label}</span>
+              {value === 'list' && listItems.length > 0 && (
+                <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 justify-center px-1 text-[0.65rem]">
+                  {listItems.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {tab === 'search' && (
-        <Search location={location} onAddToList={handleAddToList} />
-      )}
-      {tab === 'scan' && (
-        <ScanReceipt onPointsEarned={(pts) => setPoints((p) => p + pts)} />
-      )}
-      {tab === 'list' && (
-        <ShoppingList location={location} initialItems={listItems} />
-      )}
-      {tab === 'vendor' && <VendorPortal />}
+        <TabsContent value="search" className="m-0">
+          <Search location={location} onAddToList={handleAddToList} />
+        </TabsContent>
+        <TabsContent value="scan" className="m-0">
+          <ScanReceipt onPointsEarned={(pts) => setPoints((p) => p + pts)} />
+        </TabsContent>
+        <TabsContent value="list" className="m-0">
+          <ShoppingList location={location} initialItems={listItems} />
+        </TabsContent>
+        <TabsContent value="vendor" className="m-0">
+          <VendorPortal />
+        </TabsContent>
+      </Tabs>
 
-      {showLocationHelp && (
-        <div className="modal-overlay" onClick={() => setShowLocationHelp(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Enable Location Access</h2>
-            <p className="modal-sub">Your browser blocked location. Here's how to fix it:</p>
-            <div className="location-help">
-              <div className="help-block">
-                <strong>Chrome</strong>
-                <ol>
-                  <li>Click the lock icon in the address bar</li>
-                  <li>Find <em>Location</em> &rarr; set to <em>Allow</em></li>
-                  <li>Reload the page</li>
-                </ol>
-              </div>
-              <div className="help-block">
-                <strong>Safari</strong>
-                <ol>
-                  <li>Go to <em>Settings &rarr; Privacy &rarr; Location Services</em></li>
-                  <li>Find Safari &rarr; set to <em>While Using</em></li>
-                  <li>Reload the page</li>
-                </ol>
-              </div>
-              <div className="help-block">
-                <strong>Firefox</strong>
-                <ol>
-                  <li>Click the lock icon &rarr; <em>Connection Secure</em></li>
-                  <li>Find <em>Location</em> &rarr; set to <em>Allow</em></li>
-                  <li>Reload the page</li>
-                </ol>
-              </div>
+      <Dialog open={showLocationHelp} onOpenChange={setShowLocationHelp}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enable Location Access</DialogTitle>
+            <DialogDescription>
+              Your browser blocked location. Update the setting and reload the app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              <strong>Chrome</strong>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+                <li>Click the lock icon in the address bar</li>
+                <li>Find Location and set it to Allow</li>
+                <li>Reload the page</li>
+              </ol>
             </div>
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowLocationHelp(false)}>Got it</button>
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              <strong>Safari</strong>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+                <li>Open Settings, then Privacy, then Location Services</li>
+                <li>Find Safari and allow location while using it</li>
+                <li>Reload the page</li>
+              </ol>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              <strong>Firefox</strong>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+                <li>Click the lock icon in the address bar</li>
+                <li>Find Location and set it to Allow</li>
+                <li>Reload the page</li>
+              </ol>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button type="button" onClick={() => setShowLocationHelp(false)}>
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {showDealModal && (
         <PostDealModal
@@ -188,6 +236,7 @@ function App() {
           onPosted={() => setPoints((p) => p + 10)}
         />
       )}
+      <Toaster richColors />
     </main>
   )
 }

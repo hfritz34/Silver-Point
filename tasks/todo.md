@@ -25,7 +25,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 - [x] Add Tailwind, shadcn-compatible aliases, utility helpers, and base theme tokens.
 - [x] Add core shadcn UI primitives first: button, input, card, badge, tabs, dialog, form, alert, separator.
-- [ ] Convert the app shell/navigation to shadcn components.
+- [x] Convert the app shell/navigation to shadcn components.
 - [ ] Keep existing API behavior unchanged during the first UI commit.
 - [ ] Verify with `npm run build` and a local browser pass.
 
@@ -88,7 +88,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 ## First Recommended Implementation Slice
 
 - [x] Commit 1: Add shadcn/Tailwind foundation without changing screens.
-- [ ] Commit 2: Convert the app shell and top navigation.
+- [x] Commit 2: Convert the app shell and top navigation.
 - [ ] Commit 3: Convert Search UI cards and controls.
 - [ ] Commit 4: Extract backend search/list service boundaries without changing API behavior.
 - [ ] Commit 5: Push the finalized first slice to remote.
@@ -113,3 +113,4 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - Planning docs pushed in commit `099d13f`.
 - Henry approved implementation by asking to continue.
 - shadcn/Tailwind foundation verified with `npm run build` and `npm run lint`.
+- App shell shadcn conversion verified with `npm run build` and `npm run lint`.
