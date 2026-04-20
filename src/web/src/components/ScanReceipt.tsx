@@ -1,4 +1,10 @@
 import { useState, useRef } from 'react'
+import { CheckCircle, Upload, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 type ScannedItem = {
   name: string
@@ -40,7 +46,6 @@ export default function ScanReceipt({ onPointsEarned }: Props) {
     if (!preview) return
     setScanning(true)
 
-    // Simulate OCR processing with mock extracted data
     await new Promise((r) => setTimeout(r, 1500))
 
     const mockItems: ScannedItem[] = [
@@ -75,7 +80,6 @@ export default function ScanReceipt({ onPointsEarned }: Props) {
 
     setSubmitting(true)
     try {
-      // Post each item as a community deal
       for (const item of items) {
         const price = parseFloat(item.price)
         if (!item.name.trim() || isNaN(price) || price <= 0) continue
@@ -111,144 +115,187 @@ export default function ScanReceipt({ onPointsEarned }: Props) {
   }
 
   if (step === 'success') {
+    const validCount = items.filter((i) => parseFloat(i.price) > 0 && i.name.trim()).length
     return (
-      <div className="tab-content scan-success">
-        <div className="success-icon">&#10003;</div>
-        <h2>Receipt Submitted!</h2>
-        <p className="text-muted">
-          Your prices have been added to the community database.
-          <br />
-          Thanks for helping others save!
-        </p>
-        <p className="points-earned">
-          +{items.filter((i) => parseFloat(i.price) > 0 && i.name.trim()).length * 10} points earned
-        </p>
-        <button type="button" onClick={reset}>
-          Scan Another Receipt
-        </button>
+      <div className="tab-content">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle className="size-7 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">Receipt Submitted!</h2>
+              <p className="text-sm text-muted-foreground">
+                Your prices have been added to the community database.
+                <br />
+                Thanks for helping others save!
+              </p>
+            </div>
+            <Badge
+              variant="outline"
+              className="border-primary/30 bg-primary/10 text-primary px-3 py-1 text-sm font-semibold"
+            >
+              +{validCount * 10} points earned
+            </Badge>
+            <Button type="button" onClick={reset} className="mt-2">
+              Scan Another Receipt
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (step === 'review') {
     return (
-      <div className="tab-content">
-        <div className="section-header">
-          <h2>Review Extracted Items</h2>
-          <p className="text-muted">Verify and correct the data before submitting.</p>
-        </div>
-
-        <div className="review-store">
-          <label>Store Name</label>
-          <input
-            type="text"
-            placeholder="e.g. Kroger, Walmart..."
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-          />
-        </div>
-
-        <div className="review-items">
-          {items.map((item, i) => (
-            <div key={i} className="review-item">
-              <div className="review-item-fields">
-                <input
-                  type="text"
-                  placeholder="Item name"
-                  value={item.name}
-                  onChange={(e) => updateItem(i, 'name', e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="Price"
-                  className="price-input"
-                  value={item.price}
-                  onChange={(e) => updateItem(i, 'price', e.target.value)}
-                />
-              </div>
-              <button type="button" className="remove-btn" onClick={() => removeItem(i)}>
-                &#10005;
-              </button>
+      <div className="tab-content space-y-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Review Extracted Items</CardTitle>
+            <CardDescription>Verify and correct the data before submitting.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="store-name">Store Name</Label>
+              <Input
+                id="store-name"
+                type="text"
+                placeholder="e.g. Kroger, Walmart..."
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+              />
             </div>
-          ))}
-        </div>
 
-        <button type="button" className="add-item-btn" onClick={addItem}>
-          + Add Item
-        </button>
+            <div className="space-y-2">
+              {items.map((item, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Input
+                    type="text"
+                    placeholder="Item name"
+                    value={item.name}
+                    onChange={(e) => updateItem(i, 'name', e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="Price"
+                    value={item.price}
+                    onChange={(e) => updateItem(i, 'price', e.target.value)}
+                    className="w-24"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-9 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => removeItem(i)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
 
-        <div className="review-actions">
-          <button type="button" className="btn-ghost" onClick={reset}>
-            Start Over
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting || !storeName.trim() || items.length === 0}
-          >
-            {submitting ? 'Submitting...' : `Submit ${items.length} Items`}
-          </button>
-        </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-dashed text-muted-foreground hover:text-foreground"
+              onClick={addItem}
+            >
+              + Add Item
+            </Button>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={reset}>
+                Start Over
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting || !storeName.trim() || items.length === 0}
+              >
+                {submitting ? 'Submitting...' : `Submit ${items.length} Items`}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="tab-content">
-      <div className="section-header">
-        <h2>Scan & Save</h2>
-        <p className="text-muted">
-          Upload a receipt photo to share prices with the community and earn points.
-        </p>
-      </div>
-
-      <div
-        className={`upload-zone${preview ? ' has-preview' : ''}`}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        onClick={() => fileRef.current?.click()}
-      >
-        {preview ? (
-          <img src={preview} alt="Receipt preview" className="receipt-preview" />
-        ) : (
-          <div className="upload-placeholder">
-            <div className="upload-icon">&#128247;</div>
-            <p>Drop a receipt image here or tap to upload</p>
-            <span className="text-muted text-sm">JPG, PNG supported</span>
+    <div className="tab-content space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Scan & Save</CardTitle>
+          <CardDescription>
+            Upload a receipt photo to share prices with the community and earn points.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div
+            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed transition-colors ${
+              preview
+                ? 'border-border p-2'
+                : 'border-border p-10 hover:border-primary/50'
+            }`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+          >
+            {preview ? (
+              <img
+                src={preview}
+                alt="Receipt preview"
+                className="max-h-72 max-w-full rounded-lg object-contain"
+              />
+            ) : (
+              <>
+                <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                  <Upload className="size-5 text-muted-foreground" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Drop a receipt image here</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">or tap to upload · JPG, PNG supported</p>
+                </div>
+              </>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileInput}
+              hidden
+            />
           </div>
-        )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileInput}
-          hidden
-        />
-      </div>
 
-      {preview && (
-        <div className="scan-actions">
-          <button type="button" className="btn-ghost" onClick={reset}>
-            Remove
-          </button>
-          <button type="button" onClick={handleScan} disabled={scanning}>
-            {scanning ? 'Scanning...' : 'Extract Items'}
-          </button>
-        </div>
-      )}
+          {preview && (
+            <div className="flex justify-center gap-2">
+              <Button type="button" variant="outline" onClick={reset}>
+                Remove
+              </Button>
+              <Button type="button" onClick={handleScan} disabled={scanning}>
+                {scanning ? 'Scanning...' : 'Extract Items'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="scan-info">
-        <h3>How it works</h3>
-        <ol>
-          <li>Upload or photograph your receipt</li>
-          <li>We extract the items and prices</li>
-          <li>Review and correct any errors</li>
-          <li>Submit to earn points and help the community</li>
-        </ol>
-      </div>
+      <Card className="border-border/60 bg-muted/30">
+        <CardContent className="pt-4 pb-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">How it works</p>
+          <ol className="space-y-1 pl-4 list-decimal text-sm text-muted-foreground">
+            <li>Upload or photograph your receipt</li>
+            <li>We extract the items and prices</li>
+            <li>Review and correct any errors</li>
+            <li>Submit to earn points and help the community</li>
+          </ol>
+        </CardContent>
+      </Card>
     </div>
   )
 }
