@@ -18,7 +18,7 @@ public sealed class CommunityDealStore
     {
     }
 
-    internal CommunityDealStore(string storagePath)
+    public CommunityDealStore(string storagePath)
     {
         _storagePath = storagePath;
         _deals = LoadDeals(storagePath);
