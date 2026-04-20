@@ -5,6 +5,7 @@ dist/
 # .NET
 bin/
 obj/
+src/api/Data/*.json
 *.user
 *.suo
 .vs/
