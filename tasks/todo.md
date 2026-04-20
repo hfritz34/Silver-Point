@@ -5,6 +5,7 @@
 - [x] Pulled latest `origin/main` before the final-version planning pass.
 - [x] Compared the current repo against the final project report.
 - [x] Identified the current app as a functional MVP/prototype, not the full final-report architecture.
+- [x] Added and pushed final-version planning docs.
 - [ ] Review this plan with Henry before beginning implementation changes.
 
 ## Guiding Goal
@@ -13,7 +14,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Phase 0: Workflow And Guardrails
 
-- [ ] Push the current three completed commits to the remote before new implementation work.
+- [x] Push the current completed commits to the remote before new implementation work.
 - [ ] Keep `tasks/todo.md` updated as work progresses.
 - [ ] Keep `tasks/lessons.md` updated after user corrections or process misses.
 - [ ] Use small single-line commits grouped by purpose.
@@ -109,4 +110,5 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Review Results
 
-- Pending plan review.
+- Planning docs pushed in commit `099d13f`.
+- Pending Henry review before implementation.
