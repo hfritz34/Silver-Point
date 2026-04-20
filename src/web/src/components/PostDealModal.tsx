@@ -23,6 +23,7 @@ export default function PostDealModal({ onClose, onPosted }: Props) {
           productName: form.productName,
           storeName: form.storeName,
           price,
+          source: 'manual',
         }),
       })
       setSuccess(true)

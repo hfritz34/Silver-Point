@@ -9,6 +9,9 @@ type SearchResult = {
   distanceMi: number
   stock: Stock
   community: boolean
+  verifiedAt: string | null
+  source: string
+  confidence: number
 }
 
 const POPULAR = ['milk', 'infant formula', 'eggs', 'ibuprofen', 'diapers']
@@ -17,6 +20,32 @@ const STOCK_LABEL: Record<Stock, string> = {
   in_stock: 'In Stock',
   low_stock: 'Low Stock',
   out_of_stock: 'Out of Stock',
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  demo: 'Demo estimate',
+  kroger_api: 'Retailer API',
+  receipt: 'Receipt verified',
+  vendor: 'Store submitted',
+  manual: 'Community posted',
+  community: 'Community posted',
+}
+
+function formatFreshness(verifiedAt: string | null) {
+  if (!verifiedAt) return 'No live timestamp'
+
+  const verifiedMs = new Date(verifiedAt).getTime()
+  if (Number.isNaN(verifiedMs)) return 'Timestamp pending'
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - verifiedMs) / 60000))
+  if (diffMinutes < 1) return 'Verified just now'
+  if (diffMinutes < 60) return `Verified ${diffMinutes}m ago`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `Verified ${diffHours}h ago`
+
+  const diffDays = Math.floor(diffHours / 24)
+  return `Verified ${diffDays}d ago`
 }
 
 type Props = {
@@ -168,6 +197,11 @@ export default function Search({ location, onAddToList }: Props) {
                     {savings > 0.005 && sortBy === 'price' && (
                       <span className="savings">Save ${savings.toFixed(2)} vs most expensive</span>
                     )}
+                  </div>
+                  <div className="result-meta">
+                    <span>{SOURCE_LABEL[r.source] ?? 'Community data'}</span>
+                    <span>{formatFreshness(r.verifiedAt)}</span>
+                    <span>{Math.round(r.confidence * 100)}% confidence</span>
                   </div>
                   {onAddToList && (
                     <button

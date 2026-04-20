@@ -348,6 +348,15 @@ h1 {
 
 .savings { font-size: 0.75rem; color: var(--blue); }
 
+.result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
 .add-to-list-btn {
   margin-top: 0.5rem;
   padding: 0.3rem 0.7rem;

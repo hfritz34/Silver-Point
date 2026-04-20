@@ -49,6 +49,7 @@ export default function VendorPortal() {
             productName: entry.product.trim(),
             storeName: storeName.trim(),
             price: parseFloat(entry.price),
+            source: 'vendor',
           }),
         })
       }

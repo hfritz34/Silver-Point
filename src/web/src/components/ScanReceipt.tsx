@@ -86,6 +86,7 @@ export default function ScanReceipt({ onPointsEarned }: Props) {
             productName: item.name.trim(),
             storeName: storeName.trim(),
             price,
+            source: 'receipt',
           }),
         })
       }
