@@ -101,72 +101,78 @@ function App() {
 
   return (
     <main className="min-h-screen pb-8">
-      <header className="rounded-xl border border-border bg-card/95 p-4 text-card-foreground shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <Badge variant="secondary" className="w-fit gap-1.5">
-              <BadgeDollarSign className="size-3.5" />
-              Local price intelligence
-            </Badge>
-            <div>
-              <h1 className="text-3xl font-bold tracking-normal text-card-foreground">
-                SilverPoint
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Find the lowest verified price near you.
-              </p>
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
+        <div className="mx-auto max-w-[900px] px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-black tracking-tight select-none">
+                SP
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight leading-none text-foreground">
+                  SilverPoint
+                </h1>
+                <p className="text-[0.7rem] text-muted-foreground leading-none mt-0.5">
+                  Local price intelligence
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {points > 0 && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-primary/40 px-2.5 py-1 text-primary text-xs font-semibold"
+                >
+                  <BadgeDollarSign className="size-3" />
+                  {points} pts
+                </Badge>
+              )}
+              <Button
+                type="button"
+                variant={location ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={handleUseLocation}
+                disabled={locating}
+                className={location ? 'border-primary/40 text-primary bg-primary/10 hover:bg-primary/15' : ''}
+              >
+                {locating ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <MapPin className="size-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {locating
+                    ? 'Locating...'
+                    : location
+                      ? `Near ${locationLabel || '...'}`
+                      : 'Use location'}
+                </span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowDealModal(true)}
+              >
+                <Plus className="size-3.5" />
+                Post Deal
+              </Button>
             </div>
           </div>
-
-          {points > 0 && (
-            <Badge variant="outline" className="w-fit border-emerald-500/30 px-3 py-1 text-emerald-600">
-              {points} pts
-            </Badge>
-          )}
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant={location ? 'secondary' : 'outline'}
-            size="sm"
-            onClick={handleUseLocation}
-            disabled={locating}
-          >
-            {locating ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <MapPin className="size-4" />
-            )}
-            {locating
-              ? 'Getting location...'
-              : location
-                ? `Near ${locationLabel || '...'}`
-                : 'Use my location'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDealModal(true)}
-          >
-            <Plus className="size-4" />
-            Post Deal
-          </Button>
           {locationError && (
-            <span className="text-sm text-destructive">{locationError}</span>
+            <p className="mt-1.5 text-xs text-destructive">{locationError}</p>
           )}
         </div>
       </header>
 
-      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-5 space-y-5">
-        <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-muted p-1">
+      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="space-y-5">
+        <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-muted/60 p-1 [&>[data-state=active]]:bg-background [&>[data-state=active]]:text-primary [&>[data-state=active]]:shadow-sm">
           {TABS.map(({ value, label, icon: Icon }) => (
-            <TabsTrigger key={value} value={value} className="gap-1.5 px-2 py-2 text-xs sm:text-sm">
-              <Icon className="size-4" />
+            <TabsTrigger key={value} value={value} className="gap-1.5 px-2 py-2 text-xs sm:text-sm rounded-lg">
+              <Icon className="size-3.5 sm:size-4" />
               <span>{label}</span>
               {value === 'list' && listItems.length > 0 && (
-                <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 justify-center px-1 text-[0.65rem]">
+                <Badge className="ml-0.5 h-4 min-w-4 justify-center px-1 text-[0.6rem] bg-primary text-primary-foreground hover:bg-primary">
                   {listItems.length}
                 </Badge>
               )}
