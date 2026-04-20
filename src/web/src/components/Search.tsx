@@ -13,9 +13,6 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -137,21 +134,18 @@ export default function Search({ location, onAddToList }: Props) {
   const maxPrice = sorted && sorted.length > 0 ? Math.max(...sorted.map((r) => r.price)) : 0
 
   return (
-    <div className="tab-content space-y-4">
-      <Card className="overflow-visible">
-        <CardHeader className="gap-1">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <SearchIcon className="size-5" />
-            Search local prices
-          </CardTitle>
-          <CardDescription>
+    <div className="tab-content space-y-5">
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">Search local prices</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Compare store prices, stock, distance, and community freshness.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
-              <Input
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Input
               type="text"
               placeholder="Search for milk, eggs, formula..."
               value={query}
@@ -162,13 +156,14 @@ export default function Search({ location, onAddToList }: Props) {
                 if (e.key === 'Enter') search(query)
                 if (e.key === 'Escape') setShowSuggestions(false)
               }}
+              className="h-10"
             />
             {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute top-[calc(100%+0.35rem)] z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+              <ul className="absolute top-[calc(100%+0.35rem)] z-50 w-full rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
                 {suggestions.map((s) => (
                   <li
                     key={s}
-                    className="cursor-pointer rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    className="cursor-pointer rounded-md px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
                     onMouseDown={() => handleSuggestionClick(s)}
                   >
                     {s}
@@ -177,33 +172,38 @@ export default function Search({ location, onAddToList }: Props) {
               </ul>
             )}
           </div>
-            <Button type="button" onClick={() => search(query)} disabled={loading} className="sm:w-32">
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
+          <Button
+            type="button"
+            onClick={() => search(query)}
+            disabled={loading}
+            className="sm:w-28 h-10"
+          >
+            <SearchIcon className="size-3.5" />
+            {loading ? 'Searching...' : 'Search'}
+          </Button>
         </div>
 
-          <div className="flex flex-wrap gap-2">
-            {POPULAR.map((p) => (
-              <Button
-                key={p}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleChip(p)}
-                className="h-8 rounded-full"
-              >
-                {p}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex flex-wrap gap-1.5">
+          {POPULAR.map((p) => (
+            <Button
+              key={p}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleChip(p)}
+              className="h-7 rounded-full text-xs hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              {p}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       {loading && (
         <div className="grid gap-3">
           {[0, 1, 2].map((item) => (
             <Card key={item}>
-              <CardContent className="space-y-3 pt-6">
+              <CardContent className="space-y-3 pt-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-24" />
@@ -225,14 +225,15 @@ export default function Search({ location, onAddToList }: Props) {
       {sorted && sorted.length > 0 && (
         <>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <SlidersHorizontal className="size-3.5" />
               Sort by
-            </Badge>
+            </span>
             <Button
               type="button"
               variant={sortBy === 'price' ? 'default' : 'outline'}
               size="sm"
+              className="h-7 text-xs"
               onClick={() => setSortBy('price')}
             >
               Price
@@ -241,72 +242,86 @@ export default function Search({ location, onAddToList }: Props) {
               type="button"
               variant={sortBy === 'distance' ? 'default' : 'outline'}
               size="sm"
+              className="h-7 text-xs"
               onClick={() => setSortBy('distance')}
             >
               Distance
             </Button>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2.5">
             {sorted.map((r, i) => {
               const savings = maxPrice - r.price
               const isBest = i === 0 && sortBy === 'price'
               return (
                 <Card
                   key={`${r.storeName}-${r.productName}-${i}`}
-                  className={isBest ? 'border-emerald-500/50' : r.community ? 'border-sky-500/40' : undefined}
+                  className={
+                    isBest
+                      ? 'border-primary/50 bg-primary/[0.03]'
+                      : r.community
+                        ? 'border-sky-500/30'
+                        : undefined
+                  }
                 >
-                  <CardContent className="space-y-4 pt-6">
+                  <CardContent className="space-y-3.5 pt-5">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 space-y-2">
-                        <div className="flex flex-wrap gap-2">
+                      <div className="min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           {isBest && (
-                            <Badge className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-600">
-                              <Sparkles className="size-3.5" />
+                            <Badge className="gap-1 bg-primary text-primary-foreground hover:bg-primary text-[0.65rem] px-2 py-0.5">
+                              <Sparkles className="size-3" />
                               Best Price
                             </Badge>
                           )}
                           {r.community && (
-                            <Badge variant="secondary">Community Deal</Badge>
+                            <Badge variant="secondary" className="text-[0.65rem] px-2 py-0.5">Community Deal</Badge>
                           )}
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold leading-tight">{r.storeName}</h3>
-                          <p className="text-sm text-muted-foreground">{r.productName}</p>
+                          <h3 className="text-base font-semibold leading-tight">{r.storeName}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.productName}</p>
                         </div>
                       </div>
-                      <Badge variant="outline" className="shrink-0 gap-1.5">
-                        <MapPin className="size-3.5" />
+                      <Badge variant="outline" className="shrink-0 gap-1 text-[0.65rem]">
+                        <MapPin className="size-3" />
                         {r.distanceMi} mi
                       </Badge>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-3xl font-bold">${r.price.toFixed(2)}</span>
+                      <span className={`text-2xl font-bold tabular-nums${isBest ? ' text-primary' : ''}`}>
+                        ${r.price.toFixed(2)}
+                      </span>
                       <Badge
                         variant={r.stock === 'out_of_stock' ? 'destructive' : 'outline'}
                         className={
                           r.stock === 'in_stock'
-                            ? 'border-emerald-500/30 text-emerald-600'
+                            ? 'border-primary/30 text-primary text-[0.65rem]'
                             : r.stock === 'low_stock'
-                              ? 'border-amber-500/40 text-amber-600'
-                              : undefined
+                              ? 'border-amber-500/40 text-amber-600 text-[0.65rem]'
+                              : 'text-[0.65rem]'
                         }
                       >
                         {STOCK_LABEL[r.stock]}
                       </Badge>
-                    {savings > 0.005 && sortBy === 'price' && (
-                        <Badge variant="secondary">Save ${savings.toFixed(2)}</Badge>
-                    )}
+                      {savings > 0.005 && sortBy === 'price' && (
+                        <Badge
+                          variant="outline"
+                          className="border-primary/20 bg-primary/10 text-primary text-[0.65rem]"
+                        >
+                          Save ${savings.toFixed(2)}
+                        </Badge>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[0.7rem] text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
-                        <ShieldCheck className="size-3.5" />
+                        <ShieldCheck className="size-3" />
                         {SOURCE_LABEL[r.source] ?? 'Community data'}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Clock3 className="size-3.5" />
+                        <Clock3 className="size-3" />
                         {formatFreshness(r.verifiedAt)}
                       </span>
                       <span>{Math.round(r.confidence * 100)}% confidence</span>
@@ -315,11 +330,12 @@ export default function Search({ location, onAddToList }: Props) {
                     {onAddToList && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10"
                         onClick={() => onAddToList(r.productName)}
                       >
-                        <Plus className="size-4" />
+                        <Plus className="size-3.5" />
                         Add to List
                       </Button>
                     )}
@@ -332,11 +348,25 @@ export default function Search({ location, onAddToList }: Props) {
       )}
 
       {sorted && sorted.length === 0 && !loading && (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            No results found.
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center py-14 text-center">
+          <SearchIcon className="size-10 text-muted-foreground/30 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No results found</p>
+          <p className="text-xs text-muted-foreground/70 mt-1 mb-4">Try one of the popular searches below</p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {POPULAR.map((p) => (
+              <Button
+                key={p}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleChip(p)}
+                className="h-7 rounded-full text-xs"
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
