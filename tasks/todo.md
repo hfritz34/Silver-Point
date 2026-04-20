@@ -32,7 +32,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 ## Phase 2: UX Revamp
 
 - [ ] Redesign the first screen around the real search workflow, not a marketing page.
-- [ ] Convert Search results to richer shadcn cards with price, savings, stock, source, freshness, and confidence.
+- [x] Convert Search results to richer shadcn cards with price, savings, stock, source, freshness, and confidence.
 - [ ] Convert Scan-to-Save to a clearer upload/review/success flow.
 - [ ] Convert Shopping List to a route planning workspace with totals and stop grouping.
 - [ ] Convert Vendor Portal into a polished data-entry flow with validation feedback.
@@ -89,7 +89,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 - [x] Commit 1: Add shadcn/Tailwind foundation without changing screens.
 - [x] Commit 2: Convert the app shell and top navigation.
-- [ ] Commit 3: Convert Search UI cards and controls.
+- [x] Commit 3: Convert Search UI cards and controls.
 - [ ] Commit 4: Extract backend search/list service boundaries without changing API behavior.
 - [ ] Commit 5: Push the finalized first slice to remote.
 
@@ -114,3 +114,4 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - Henry approved implementation by asking to continue.
 - shadcn/Tailwind foundation verified with `npm run build` and `npm run lint`.
 - App shell shadcn conversion verified with `npm run build` and `npm run lint`.
+- Search shadcn conversion verified with `npm run build` and `npm run lint`.

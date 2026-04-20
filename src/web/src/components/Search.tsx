@@ -1,4 +1,24 @@
 import { useState, useMemo, useRef } from 'react'
+import {
+  Clock3,
+  MapPin,
+  Plus,
+  Search as SearchIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Stock = 'in_stock' | 'low_stock' | 'out_of_stock'
 
@@ -114,16 +134,26 @@ export default function Search({ location, onAddToList }: Props) {
     search(s)
   }
 
-  const maxPrice = sorted ? Math.max(...sorted.map((r) => r.price)) : 0
+  const maxPrice = sorted && sorted.length > 0 ? Math.max(...sorted.map((r) => r.price)) : 0
 
   return (
-    <div className="tab-content">
-      <div className="search-wrap">
-        <div className="search">
-          <div className="input-wrap">
-            <input
+    <div className="tab-content space-y-4">
+      <Card className="overflow-visible">
+        <CardHeader className="gap-1">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <SearchIcon className="size-5" />
+            Search local prices
+          </CardTitle>
+          <CardDescription>
+            Compare store prices, stock, distance, and community freshness.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Input
               type="text"
-              placeholder="Search for a product..."
+              placeholder="Search for milk, eggs, formula..."
               value={query}
               onChange={(e) => handleInputChange(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
@@ -134,92 +164,180 @@ export default function Search({ location, onAddToList }: Props) {
               }}
             />
             {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions">
+              <ul className="absolute top-[calc(100%+0.35rem)] z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
                 {suggestions.map((s) => (
-                  <li key={s} onMouseDown={() => handleSuggestionClick(s)}>
+                  <li
+                    key={s}
+                    className="cursor-pointer rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onMouseDown={() => handleSuggestionClick(s)}
+                  >
                     {s}
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <button type="button" onClick={() => search(query)} disabled={loading}>
-            {loading ? 'Searching...' : 'Search'}
-          </button>
+            <Button type="button" onClick={() => search(query)} disabled={loading} className="sm:w-32">
+              {loading ? 'Searching...' : 'Search'}
+            </Button>
         </div>
-      </div>
 
-      <div className="chips">
-        {POPULAR.map((p) => (
-          <button key={p} type="button" className="chip" onClick={() => handleChip(p)}>
-            {p}
-          </button>
-        ))}
-      </div>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR.map((p) => (
+              <Button
+                key={p}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleChip(p)}
+                className="h-8 rounded-full"
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {loading && (
+        <div className="grid gap-3">
+          {[0, 1, 2].map((item) => (
+            <Card key={item}>
+              <CardContent className="space-y-3 pt-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-36" />
+                  </div>
+                  <Skeleton className="h-4 w-14" />
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {sorted && sorted.length > 0 && (
         <>
-          <div className="sort-controls">
-            <span className="sort-label">Sort by</span>
-            <button
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1.5">
+              <SlidersHorizontal className="size-3.5" />
+              Sort by
+            </Badge>
+            <Button
               type="button"
-              className={sortBy === 'price' ? 'sort-btn active' : 'sort-btn'}
+              variant={sortBy === 'price' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setSortBy('price')}
             >
               Price
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={sortBy === 'distance' ? 'sort-btn active' : 'sort-btn'}
+              variant={sortBy === 'distance' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setSortBy('distance')}
             >
               Distance
-            </button>
+            </Button>
           </div>
 
-          <div className="results">
+          <div className="grid gap-3">
             {sorted.map((r, i) => {
               const savings = maxPrice - r.price
               const isBest = i === 0 && sortBy === 'price'
               return (
-                <div key={i} className={`result-card${isBest ? ' best' : ''}${r.community ? ' community' : ''}`}>
-                  <div className="card-top">
-                    <div className="card-left">
-                      {isBest && <span className="best-badge">Best Price</span>}
-                      {r.community && <span className="community-badge">Community Deal</span>}
-                      <span className="store-name">{r.storeName}</span>
+                <Card
+                  key={`${r.storeName}-${r.productName}-${i}`}
+                  className={isBest ? 'border-emerald-500/50' : r.community ? 'border-sky-500/40' : undefined}
+                >
+                  <CardContent className="space-y-4 pt-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {isBest && (
+                            <Badge className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-600">
+                              <Sparkles className="size-3.5" />
+                              Best Price
+                            </Badge>
+                          )}
+                          {r.community && (
+                            <Badge variant="secondary">Community Deal</Badge>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold leading-tight">{r.storeName}</h3>
+                          <p className="text-sm text-muted-foreground">{r.productName}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="shrink-0 gap-1.5">
+                        <MapPin className="size-3.5" />
+                        {r.distanceMi} mi
+                      </Badge>
                     </div>
-                    <span className="distance">{r.distanceMi} mi</span>
-                  </div>
-                  <div className="card-bottom">
-                    <span className="price">${r.price.toFixed(2)}</span>
-                    <span className={`stock-badge ${r.stock}`}>{STOCK_LABEL[r.stock]}</span>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-3xl font-bold">${r.price.toFixed(2)}</span>
+                      <Badge
+                        variant={r.stock === 'out_of_stock' ? 'destructive' : 'outline'}
+                        className={
+                          r.stock === 'in_stock'
+                            ? 'border-emerald-500/30 text-emerald-600'
+                            : r.stock === 'low_stock'
+                              ? 'border-amber-500/40 text-amber-600'
+                              : undefined
+                        }
+                      >
+                        {STOCK_LABEL[r.stock]}
+                      </Badge>
                     {savings > 0.005 && sortBy === 'price' && (
-                      <span className="savings">Save ${savings.toFixed(2)} vs most expensive</span>
+                        <Badge variant="secondary">Save ${savings.toFixed(2)}</Badge>
                     )}
-                  </div>
-                  <div className="result-meta">
-                    <span>{SOURCE_LABEL[r.source] ?? 'Community data'}</span>
-                    <span>{formatFreshness(r.verifiedAt)}</span>
-                    <span>{Math.round(r.confidence * 100)}% confidence</span>
-                  </div>
-                  {onAddToList && (
-                    <button
-                      type="button"
-                      className="add-to-list-btn"
-                      onClick={() => onAddToList(r.productName)}
-                    >
-                      + Add to List
-                    </button>
-                  )}
-                </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <ShieldCheck className="size-3.5" />
+                        {SOURCE_LABEL[r.source] ?? 'Community data'}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock3 className="size-3.5" />
+                        {formatFreshness(r.verifiedAt)}
+                      </span>
+                      <span>{Math.round(r.confidence * 100)}% confidence</span>
+                    </div>
+
+                    {onAddToList && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onAddToList(r.productName)}
+                      >
+                        <Plus className="size-4" />
+                        Add to List
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
               )
             })}
           </div>
         </>
       )}
 
-      {sorted && sorted.length === 0 && <p className="no-results">No results found.</p>}
+      {sorted && sorted.length === 0 && !loading && (
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            No results found.
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
