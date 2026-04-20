@@ -40,7 +40,7 @@ const STOCK_LABEL: Record<Stock, string> = {
 }
 
 const SOURCE_LABEL: Record<string, string> = {
-  demo: 'Demo estimate',
+  demo: 'Estimated price',
   kroger_api: 'Retailer API',
   receipt: 'Receipt verified',
   vendor: 'Store submitted',
