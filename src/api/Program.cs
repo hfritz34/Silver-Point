@@ -159,6 +159,86 @@ app.MapPost("/api/deals", (DealRequest req) =>
     return Results.Ok(new { ok = true });
 });
 
+// Shopping list optimizer — given a list of items, find the cheapest store combination
+app.MapGet("/api/list/optimize", (string[] items, string? mode, double? lat, double? lng) =>
+{
+    if (items.Length == 0)
+        return Results.BadRequest(new { error = "At least one item is required" });
+
+    // Get prices for every item at every store
+    var priceMap = new Dictionary<string, Dictionary<string, decimal>>(); // store -> item -> price
+    foreach (var item in items)
+    {
+        var results = GetResults(item, lat, lng);
+        foreach (dynamic r in results)
+        {
+            string store = r.storeName;
+            decimal price = r.price;
+            if (!priceMap.ContainsKey(store)) priceMap[store] = new();
+            // Keep the cheapest price for each item at this store
+            if (!priceMap[store].ContainsKey(item) || price < priceMap[store][item])
+                priceMap[store][item] = price;
+        }
+    }
+
+    if (mode == "fewest_stops")
+    {
+        // Find the single store with the most items and lowest total
+        var bestStore = priceMap
+            .Where(s => s.Value.Count > 0)
+            .OrderByDescending(s => s.Value.Count)
+            .ThenBy(s => s.Value.Values.Sum())
+            .FirstOrDefault();
+
+        if (bestStore.Key is null)
+            return Results.Ok(Array.Empty<object>());
+
+        return Results.Ok(new[]
+        {
+            new
+            {
+                storeName = bestStore.Key,
+                items = bestStore.Value.Select(kv => new { name = kv.Key, price = kv.Value }).ToArray(),
+                subtotal = bestStore.Value.Values.Sum(),
+                distanceMi = Dist(bestStore.Key, lat, lng),
+            }
+        });
+    }
+
+    // "cheapest" mode: for each item, pick the cheapest store
+    var cheapestByItem = new Dictionary<string, (string store, decimal price)>();
+    foreach (var item in items)
+    {
+        string? bestStore = null;
+        decimal bestPrice = decimal.MaxValue;
+        foreach (var (store, storeItems) in priceMap)
+        {
+            if (storeItems.TryGetValue(item, out var p) && p < bestPrice)
+            {
+                bestPrice = p;
+                bestStore = store;
+            }
+        }
+        if (bestStore is not null)
+            cheapestByItem[item] = (bestStore, bestPrice);
+    }
+
+    // Group by store
+    var grouped = cheapestByItem
+        .GroupBy(kv => kv.Value.store)
+        .Select(g => new
+        {
+            storeName = g.Key,
+            items = g.Select(kv => new { name = kv.Key, price = kv.Value.price }).ToArray(),
+            subtotal = g.Sum(kv => kv.Value.price),
+            distanceMi = Dist(g.Key, lat, lng),
+        })
+        .OrderBy(r => r.distanceMi)
+        .ToArray();
+
+    return Results.Ok(grouped);
+});
+
 app.Run();
 
 record DealRequest(string ProductName, string StoreName, decimal Price);

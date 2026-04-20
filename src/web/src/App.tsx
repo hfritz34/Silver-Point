@@ -1,23 +1,18 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState } from 'react'
 import './App.css'
+import Search from './components/Search'
+import ScanReceipt from './components/ScanReceipt'
+import ShoppingList from './components/ShoppingList'
+import VendorPortal from './components/VendorPortal'
+import PostDealModal from './components/PostDealModal'
 
-type Stock = 'in_stock' | 'low_stock' | 'out_of_stock'
+type Tab = 'search' | 'scan' | 'list' | 'vendor'
 
-type SearchResult = {
-  productName: string
-  storeName: string
-  price: number
-  distanceMi: number
-  stock: Stock
-  community: boolean
-}
-
-const POPULAR = ['milk', 'infant formula', 'eggs', 'ibuprofen', 'diapers']
-
-const STOCK_LABEL: Record<Stock, string> = {
-  in_stock: 'In Stock',
-  low_stock: 'Low Stock',
-  out_of_stock: 'Out of Stock',
+const TAB_LABELS: Record<Tab, string> = {
+  search: 'Search',
+  scan: 'Scan & Save',
+  list: 'My List',
+  vendor: 'Vendors',
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -35,38 +30,18 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 function App() {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[] | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [tab, setTab] = useState<Tab>('search')
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationLabel, setLocationLabel] = useState<string | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'price' | 'distance'>('price')
-  const [showDealModal, setShowDealModal] = useState(false)
-  const [dealForm, setDealForm] = useState({ productName: '', storeName: '', price: '' })
-  const [dealPosting, setDealPosting] = useState(false)
-  const [dealSuccess, setDealSuccess] = useState(false)
   const [locating, setLocating] = useState(false)
   const [showLocationHelp, setShowLocationHelp] = useState(false)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return POPULAR
-    return POPULAR.filter((p) => p.includes(q) && p !== q)
-  }, [query])
-
-  const sorted = useMemo(() => {
-    if (!results) return null
-    return [...results].sort((a, b) =>
-      sortBy === 'price' ? a.price - b.price : a.distanceMi - b.distanceMi
-    )
-  }, [results, sortBy])
+  const [showDealModal, setShowDealModal] = useState(false)
+  const [points, setPoints] = useState(0)
+  const [listItems, setListItems] = useState<string[]>([])
 
   function handleUseLocation() {
     if (location) {
-      // Toggle off
       setLocation(null)
       setLocationLabel(null)
       setLocationError(null)
@@ -95,192 +70,79 @@ function App() {
     )
   }
 
-  async function search(q: string) {
-    const trimmed = q.trim()
-    if (!trimmed) return
-    setShowSuggestions(false)
-    setLoading(true)
-    setResults(null)
-    setSortBy('price')
-    try {
-      let url = `/api/search?q=${encodeURIComponent(trimmed)}`
-      if (location) url += `&lat=${location.lat}&lng=${location.lng}`
-      const res = await fetch(url)
-      const data = await res.json()
-      setResults(Array.isArray(data) ? data : [])
-    } catch {
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
+  function handleAddToList(product: string) {
+    setListItems((prev) =>
+      prev.includes(product.toLowerCase()) ? prev : [...prev, product.toLowerCase()]
+    )
+    setTab('list')
   }
-
-  function handleChip(chip: string) {
-    setQuery(chip)
-    search(chip)
-  }
-
-  function handleInputChange(val: string) {
-    setQuery(val)
-    setShowSuggestions(true)
-  }
-
-  function handleInputBlur() {
-    // Delay so suggestion clicks register before hiding
-    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 150)
-  }
-
-  function handleSuggestionClick(s: string) {
-    if (blurTimeout.current) clearTimeout(blurTimeout.current)
-    setQuery(s)
-    search(s)
-  }
-
-  async function handlePostDeal(e: React.FormEvent) {
-    e.preventDefault()
-    const price = parseFloat(dealForm.price)
-    if (!dealForm.productName || !dealForm.storeName || isNaN(price) || price <= 0) return
-    setDealPosting(true)
-    try {
-      await fetch('/api/deals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName: dealForm.productName, storeName: dealForm.storeName, price }),
-      })
-      setDealSuccess(true)
-      setTimeout(() => {
-        setShowDealModal(false)
-        setDealSuccess(false)
-        setDealForm({ productName: '', storeName: '', price: '' })
-        search(dealForm.productName)
-      }, 1200)
-    } finally {
-      setDealPosting(false)
-    }
-  }
-
-  const maxPrice = sorted ? Math.max(...sorted.map((r) => r.price)) : 0
 
   return (
     <main>
       <header>
-        <h1>SilverPoint</h1>
-        <p className="tagline">Find the lowest price near you.</p>
-      </header>
-
-      <div className="search-wrap">
-        <div className="search">
-          <div className="input-wrap">
-            <input
-              type="text"
-              placeholder="Search for a product..."
-              value={query}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={handleInputBlur}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') search(query)
-                if (e.key === 'Escape') setShowSuggestions(false)
-              }}
-            />
-            {location && (
-              <span className="input-loc-dot" title={`Near ${locationLabel}`}>📍</span>
-            )}
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions">
-                {suggestions.map((s) => (
-                  <li key={s} onMouseDown={() => handleSuggestionClick(s)}>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            )}
+        <div className="header-top">
+          <div>
+            <h1>SilverPoint</h1>
+            <p className="tagline">Find the lowest price near you.</p>
           </div>
-          <button type="button" onClick={() => search(query)} disabled={loading}>
-            {loading ? 'Searching…' : 'Search'}
-          </button>
+          {points > 0 && (
+            <div className="points-badge">
+              <span className="points-value">{points}</span>
+              <span className="points-label">pts</span>
+            </div>
+          )}
         </div>
 
-        <div className="location">
+        <div className="location-bar">
           <button
             type="button"
             className={`location-btn${location ? ' active' : ''}${locating ? ' locating' : ''}`}
             onClick={handleUseLocation}
             disabled={locating}
           >
-            {locating ? '⏳ Getting location…' : location ? '📍 Location on · tap to remove' : '📍 Use my location'}
+            {locating
+              ? 'Getting location...'
+              : location
+                ? `Near ${locationLabel || '...'}`
+                : 'Use my location'}
+          </button>
+          <button
+            type="button"
+            className="chip chip-deal"
+            onClick={() => setShowDealModal(true)}
+          >
+            + Post a Deal
           </button>
           {locationError && <span className="location-error">{locationError}</span>}
         </div>
+      </header>
 
-        {location && locationLabel && (
-          <div className="location-strip">
-            <span className="location-strip-icon">📍</span>
-            <span>Showing prices near <strong>{locationLabel}</strong></span>
-          </div>
-        )}
-      </div>
-
-      <div className="chips">
-        {POPULAR.map((p) => (
-          <button key={p} type="button" className="chip" onClick={() => handleChip(p)}>
-            {p}
+      <nav className="tab-nav">
+        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={`tab-btn${tab === t ? ' active' : ''}`}
+            onClick={() => setTab(t)}
+          >
+            {TAB_LABELS[t]}
+            {t === 'list' && listItems.length > 0 && (
+              <span className="tab-badge">{listItems.length}</span>
+            )}
           </button>
         ))}
-        <button type="button" className="chip chip-deal" onClick={() => setShowDealModal(true)}>
-          + Post a Deal
-        </button>
-      </div>
+      </nav>
 
-      {sorted && sorted.length > 0 && (
-        <>
-          <div className="sort-controls">
-            <span className="sort-label">Sort by</span>
-            <button
-              type="button"
-              className={sortBy === 'price' ? 'sort-btn active' : 'sort-btn'}
-              onClick={() => setSortBy('price')}
-            >
-              Price
-            </button>
-            <button
-              type="button"
-              className={sortBy === 'distance' ? 'sort-btn active' : 'sort-btn'}
-              onClick={() => setSortBy('distance')}
-            >
-              Distance
-            </button>
-          </div>
-
-          <div className="results">
-            {sorted.map((r, i) => {
-              const savings = maxPrice - r.price
-              const isBest = i === 0 && sortBy === 'price'
-              return (
-                <div key={i} className={`result-card${isBest ? ' best' : ''}${r.community ? ' community' : ''}`}>
-                  <div className="card-top">
-                    <div className="card-left">
-                      {isBest && <span className="best-badge">Best Price</span>}
-                      {r.community && <span className="community-badge">Community Deal</span>}
-                      <span className="store-name">{r.storeName}</span>
-                    </div>
-                    <span className="distance">{r.distanceMi} mi</span>
-                  </div>
-                  <div className="card-bottom">
-                    <span className="price">${r.price.toFixed(2)}</span>
-                    <span className={`stock-badge ${r.stock}`}>{STOCK_LABEL[r.stock]}</span>
-                    {savings > 0.005 && sortBy === 'price' && (
-                      <span className="savings">Save ${savings.toFixed(2)} vs most expensive</span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
+      {tab === 'search' && (
+        <Search location={location} onAddToList={handleAddToList} />
       )}
-
-      {sorted && sorted.length === 0 && <p className="no-results">No results found.</p>}
+      {tab === 'scan' && (
+        <ScanReceipt onPointsEarned={(pts) => setPoints((p) => p + pts)} />
+      )}
+      {tab === 'list' && (
+        <ShoppingList location={location} initialItems={listItems} />
+      )}
+      {tab === 'vendor' && <VendorPortal />}
 
       {showLocationHelp && (
         <div className="modal-overlay" onClick={() => setShowLocationHelp(false)}>
@@ -291,24 +153,24 @@ function App() {
               <div className="help-block">
                 <strong>Chrome</strong>
                 <ol>
-                  <li>Click the 🔒 lock icon in the address bar</li>
-                  <li>Find <em>Location</em> → set to <em>Allow</em></li>
+                  <li>Click the lock icon in the address bar</li>
+                  <li>Find <em>Location</em> &rarr; set to <em>Allow</em></li>
                   <li>Reload the page</li>
                 </ol>
               </div>
               <div className="help-block">
                 <strong>Safari</strong>
                 <ol>
-                  <li>Go to <em>Settings → Privacy → Location Services</em></li>
-                  <li>Find Safari → set to <em>While Using</em></li>
+                  <li>Go to <em>Settings &rarr; Privacy &rarr; Location Services</em></li>
+                  <li>Find Safari &rarr; set to <em>While Using</em></li>
                   <li>Reload the page</li>
                 </ol>
               </div>
               <div className="help-block">
                 <strong>Firefox</strong>
                 <ol>
-                  <li>Click the 🔒 lock icon → <em>Connection Secure</em></li>
-                  <li>Find <em>Location</em> → set to <em>Allow</em></li>
+                  <li>Click the lock icon &rarr; <em>Connection Secure</em></li>
+                  <li>Find <em>Location</em> &rarr; set to <em>Allow</em></li>
                   <li>Reload the page</li>
                 </ol>
               </div>
@@ -321,52 +183,10 @@ function App() {
       )}
 
       {showDealModal && (
-        <div className="modal-overlay" onClick={() => setShowDealModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Post a Deal</h2>
-            <p className="modal-sub">Spotted a great price? Share it with your community.</p>
-            {dealSuccess ? (
-              <p className="deal-success">Deal posted! Thanks for contributing.</p>
-            ) : (
-              <form onSubmit={handlePostDeal}>
-                <label>Product</label>
-                <input
-                  type="text"
-                  placeholder="e.g. milk, diapers..."
-                  value={dealForm.productName}
-                  onChange={(e) => setDealForm((f) => ({ ...f, productName: e.target.value }))}
-                  required
-                />
-                <label>Store</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Walmart, Aldi..."
-                  value={dealForm.storeName}
-                  onChange={(e) => setDealForm((f) => ({ ...f, storeName: e.target.value }))}
-                  required
-                />
-                <label>Price ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="e.g. 1.99"
-                  value={dealForm.price}
-                  onChange={(e) => setDealForm((f) => ({ ...f, price: e.target.value }))}
-                  required
-                />
-                <div className="modal-actions">
-                  <button type="button" className="btn-ghost" onClick={() => setShowDealModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={dealPosting}>
-                    {dealPosting ? 'Posting…' : 'Post Deal'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
+        <PostDealModal
+          onClose={() => setShowDealModal(false)}
+          onPosted={() => setPoints((p) => p + 10)}
+        />
       )}
     </main>
   )
