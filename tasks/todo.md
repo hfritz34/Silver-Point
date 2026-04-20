@@ -27,7 +27,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - [x] Add core shadcn UI primitives first: button, input, card, badge, tabs, dialog, form, alert, separator.
 - [x] Convert the app shell/navigation to shadcn components.
 - [ ] Keep existing API behavior unchanged during the first UI commit.
-- [ ] Verify with `npm run build` and a local browser pass.
+- [x] Verify with `npm run build` and a local browser pass.
 
 ## Phase 2: UX Revamp
 
@@ -91,7 +91,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - [x] Commit 2: Convert the app shell and top navigation.
 - [x] Commit 3: Convert Search UI cards and controls.
 - [x] Commit 4: Extract backend search/list service boundaries without changing API behavior.
-- [ ] Commit 5: Push the finalized first slice to remote.
+- [x] Commit 5: Push the finalized first slice to remote.
 
 ## Subagent Findings Incorporated
 
@@ -116,3 +116,5 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - App shell shadcn conversion verified with `npm run build` and `npm run lint`.
 - Search shadcn conversion verified with `npm run build` and `npm run lint`.
 - Backend service extraction verified with `dotnet test SilverPoint.sln`.
+- Final verification passed: `dotnet test SilverPoint.sln`, `npm run build`, `npm run lint`.
+- Local smoke checks passed for `/health`, `/api/search?q=milk`, `/api/list/optimize?items=milk&items=eggs`, and the Vite dev server.
