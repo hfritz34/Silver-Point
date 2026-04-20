@@ -104,18 +104,13 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto max-w-[900px] px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-black tracking-tight select-none">
-                SP
-              </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight leading-none text-foreground">
-                  SilverPoint
-                </h1>
-                <p className="text-[0.7rem] text-muted-foreground leading-none mt-0.5">
-                  Local price intelligence
-                </p>
-              </div>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold tracking-tight leading-none text-foreground">
+                SilverPoint
+              </h1>
+              <p className="text-[0.7rem] text-muted-foreground leading-none mt-0.5">
+                Local price intelligence
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
