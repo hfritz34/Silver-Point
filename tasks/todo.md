@@ -6,7 +6,7 @@
 - [x] Compared the current repo against the final project report.
 - [x] Identified the current app as a functional MVP/prototype, not the full final-report architecture.
 - [x] Added and pushed final-version planning docs.
-- [ ] Review this plan with Henry before beginning implementation changes.
+- [x] Review this plan with Henry before beginning implementation changes.
 
 ## Guiding Goal
 
@@ -23,8 +23,8 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Phase 1: shadcn UI Foundation
 
-- [ ] Add Tailwind, shadcn-compatible aliases, utility helpers, and base theme tokens.
-- [ ] Add core shadcn UI primitives first: button, input, card, badge, tabs, dialog, form, alert, separator.
+- [x] Add Tailwind, shadcn-compatible aliases, utility helpers, and base theme tokens.
+- [x] Add core shadcn UI primitives first: button, input, card, badge, tabs, dialog, form, alert, separator.
 - [ ] Convert the app shell/navigation to shadcn components.
 - [ ] Keep existing API behavior unchanged during the first UI commit.
 - [ ] Verify with `npm run build` and a local browser pass.
@@ -87,7 +87,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## First Recommended Implementation Slice
 
-- [ ] Commit 1: Add shadcn/Tailwind foundation without changing screens.
+- [x] Commit 1: Add shadcn/Tailwind foundation without changing screens.
 - [ ] Commit 2: Convert the app shell and top navigation.
 - [ ] Commit 3: Convert Search UI cards and controls.
 - [ ] Commit 4: Extract backend search/list service boundaries without changing API behavior.
@@ -104,11 +104,12 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Review Gate
 
-- [ ] Henry has reviewed and approved the plan.
-- [ ] Any requested edits have been applied to this file.
-- [ ] Implementation starts only after this gate is checked.
+- [x] Henry has reviewed and approved the plan.
+- [x] Any requested edits have been applied to this file.
+- [x] Implementation starts only after this gate is checked.
 
 ## Review Results
 
 - Planning docs pushed in commit `099d13f`.
-- Pending Henry review before implementation.
+- Henry approved implementation by asking to continue.
+- shadcn/Tailwind foundation verified with `npm run build` and `npm run lint`.
