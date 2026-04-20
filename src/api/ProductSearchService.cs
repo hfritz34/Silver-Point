@@ -51,6 +51,7 @@ public sealed class ProductSearchService(IKrogerService kroger, CommunityDealSto
                     var best = products.MinBy(p => p.Price);
                     if (best is not null)
                     {
+                        var verifiedAt = DateTimeOffset.UtcNow;
                         krogerResults.Add(new PriceSearchResult(
                             best.Description,
                             loc.Name,
@@ -58,9 +59,13 @@ public sealed class ProductSearchService(IKrogerService kroger, CommunityDealSto
                             Math.Round(loc.DistMi, 1),
                             best.Stock,
                             false,
-                            DateTimeOffset.UtcNow,
+                            verifiedAt,
                             "kroger_api",
-                            0.9));
+                            SearchConfidenceScorer.Score(new SearchConfidenceSignal(
+                                "kroger_api",
+                                false,
+                                verifiedAt,
+                                best.Stock))));
                     }
                 }
 
@@ -111,7 +116,11 @@ public sealed class ProductSearchService(IKrogerService kroger, CommunityDealSto
                     false,
                     null,
                     "demo",
-                    0.7))
+                    SearchConfidenceScorer.Score(new SearchConfidenceSignal(
+                        "demo",
+                        false,
+                        null,
+                        x.stock))))
                 .OrderBy(x => x.Price)];
 
         var baseResults = q switch
@@ -175,7 +184,11 @@ public sealed class ProductSearchService(IKrogerService kroger, CommunityDealSto
                 true,
                 d.VerifiedAt,
                 d.Source,
-                d.Source is "receipt" or "vendor" ? 0.95 : 0.85));
+                SearchConfidenceScorer.Score(new SearchConfidenceSignal(
+                    d.Source,
+                    true,
+                    d.VerifiedAt,
+                    "in_stock"))));
 
         return [.. baseResults, .. community];
     }

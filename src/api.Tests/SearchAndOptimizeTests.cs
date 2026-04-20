@@ -43,6 +43,23 @@ public sealed class SearchAndOptimizeTests : IDisposable
     }
 
     [Fact]
+    public async Task SearchAsync_DoesNotOrderFallbackResultsByConfidence()
+    {
+        var store = new CommunityDealStore(StorePath());
+        store.Add(new DealRequest("Milk", "Corner Market", 1.79m, "receipt"));
+
+        var service = new ProductSearchService(new FakeKrogerService(), store);
+
+        var results = await service.SearchAsync("milk", null, null);
+
+        var communityResultIndex = results.ToList().FindIndex(result => result.StoreName == "Corner Market");
+        var highestDemoPriceIndex = results.ToList().FindIndex(result => result.StoreName == "Walgreens");
+
+        Assert.True(communityResultIndex > highestDemoPriceIndex);
+        Assert.True(results[communityResultIndex].Confidence > results[highestDemoPriceIndex].Confidence);
+    }
+
+    [Fact]
     public async Task OptimizeAsync_DefaultModeGroupsCheapestByStore()
     {
         var optimizer = new ShoppingListOptimizerService(
@@ -95,6 +112,54 @@ public sealed class SearchAndOptimizeTests : IDisposable
         Assert.Equal("Store A", results[0].StoreName);
         Assert.Equal(2, results[0].Items.Length);
         Assert.Equal(21m, results[0].Subtotal);
+    }
+
+    [Fact]
+    public void SearchConfidenceScorer_BoundsScores()
+    {
+        var signals = new[]
+        {
+            new SearchConfidenceSignal("demo", false, null, "out_of_stock"),
+            new SearchConfidenceSignal("receipt", true, DateTimeOffset.UtcNow, "in_stock"),
+            new SearchConfidenceSignal("unknown", true, DateTimeOffset.UtcNow.AddYears(-1), "unknown"),
+        };
+
+        foreach (var signal in signals)
+        {
+            var score = SearchConfidenceScorer.Score(signal);
+
+            Assert.InRange(score, 0, 1);
+        }
+    }
+
+    [Fact]
+    public void SearchConfidenceScorer_ScoresLiveRetailerAboveDemo()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var retailer = SearchConfidenceScorer.Score(
+            new SearchConfidenceSignal("kroger_api", false, now, "in_stock"),
+            now);
+        var demo = SearchConfidenceScorer.Score(
+            new SearchConfidenceSignal("demo", false, null, "in_stock"),
+            now);
+
+        Assert.True(retailer > demo);
+    }
+
+    [Fact]
+    public void SearchConfidenceScorer_RewardsFreshCommunityVerification()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var freshReceipt = SearchConfidenceScorer.Score(
+            new SearchConfidenceSignal("receipt", true, now.AddHours(-2), "in_stock"),
+            now);
+        var staleManual = SearchConfidenceScorer.Score(
+            new SearchConfidenceSignal("manual", true, now.AddDays(-45), "in_stock"),
+            now);
+
+        Assert.True(freshReceipt > staleManual);
     }
 
     public void Dispose()
