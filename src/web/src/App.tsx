@@ -166,9 +166,9 @@ function App() {
       </header>
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="space-y-5">
-        <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-muted/60 p-1 [&>[data-state=active]]:bg-background [&>[data-state=active]]:text-primary [&>[data-state=active]]:shadow-sm">
+        <TabsList className="grid w-full grid-cols-4 rounded-xl bg-muted/60 p-1">
           {TABS.map(({ value, label, icon: Icon }) => (
-            <TabsTrigger key={value} value={value} className="gap-1.5 px-2 py-2 text-xs sm:text-sm rounded-lg">
+            <TabsTrigger key={value} value={value} className="gap-1.5 px-2 py-2 text-xs sm:text-sm rounded-lg data-[state=active]:text-primary">
               <Icon className="size-3.5 sm:size-4" />
               <span>{label}</span>
               {value === 'list' && listItems.length > 0 && (
