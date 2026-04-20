@@ -4,13 +4,19 @@ using System.Text.Json;
 
 namespace SilverPoint.Api;
 
+public interface IKrogerService
+{
+    Task<List<(string LocationId, string Name, double DistMi)>> GetNearbyLocationsAsync(double lat, double lng);
+    Task<List<KrogerResult>?> SearchProductsAsync(string query, string locationId);
+}
+
 /// <summary>
 /// Wraps the official Kroger Developer API (developer.kroger.com).
 /// Register at https://developer.kroger.com to get ClientId and ClientSecret.
 /// Set them in appsettings.json under "Kroger:ClientId" / "Kroger:ClientSecret".
 /// When credentials are absent the service returns null and the caller falls back to mock data.
 /// </summary>
-public class KrogerService(IConfiguration config, IHttpClientFactory http)
+public class KrogerService(IConfiguration config, IHttpClientFactory http) : IKrogerService
 {
     const string TokenUrl  = "https://api.kroger.com/v1/connect/oauth2/token";
     const string LocUrl    = "https://api.kroger.com/v1/locations";

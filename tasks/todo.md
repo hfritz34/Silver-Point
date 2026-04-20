@@ -40,7 +40,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Phase 3: Durable Data Model
 
-- [ ] First extract API contracts and service boundaries from `Program.cs` without changing behavior.
+- [x] First extract API contracts and service boundaries from `Program.cs` without changing behavior.
 - [ ] Create backend folders for contracts, services, data, optimization, and processing as they become necessary.
 - [ ] Design backend models for stores, products, price observations, scan submissions, and validation status.
 - [ ] Add a repository/service layer so JSON storage can be replaced cleanly.
@@ -90,7 +90,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - [x] Commit 1: Add shadcn/Tailwind foundation without changing screens.
 - [x] Commit 2: Convert the app shell and top navigation.
 - [x] Commit 3: Convert Search UI cards and controls.
-- [ ] Commit 4: Extract backend search/list service boundaries without changing API behavior.
+- [x] Commit 4: Extract backend search/list service boundaries without changing API behavior.
 - [ ] Commit 5: Push the finalized first slice to remote.
 
 ## Subagent Findings Incorporated
@@ -115,3 +115,4 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - shadcn/Tailwind foundation verified with `npm run build` and `npm run lint`.
 - App shell shadcn conversion verified with `npm run build` and `npm run lint`.
 - Search shadcn conversion verified with `npm run build` and `npm run lint`.
+- Backend service extraction verified with `dotnet test SilverPoint.sln`.
