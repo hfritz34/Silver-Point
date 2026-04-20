@@ -50,6 +50,7 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 
 ## Phase 4: Data Quality And Scan Pipeline
 
+- [x] Replace hardcoded search confidence constants with an initial signal-based scorer.
 - [ ] Add anomaly filtering for submitted prices using simple local statistics first.
 - [ ] Add validation statuses: accepted, needs_review, rejected.
 - [ ] Add a review endpoint for flagged submissions.
@@ -118,3 +119,4 @@ Move SilverPoint from a polished prototype toward the final report version in sm
 - Backend service extraction verified with `dotnet test SilverPoint.sln`.
 - Final verification passed: `dotnet test SilverPoint.sln`, `npm run build`, `npm run lint`.
 - Local smoke checks passed for `/health`, `/api/search?q=milk`, `/api/list/optimize?items=milk&items=eggs`, and the Vite dev server.
+- Initial search confidence scoring added as a heuristic over source, freshness, stock, and community/API/demo signals; full anomaly/OCR-backed confidence remains future Phase 4 work.
